@@ -1,7 +1,7 @@
 import streamlit as st  # New tech: Python-to-web ML UIs—no React needed
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split  # Keep for local fallback if needed
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import StandardScaler
 from imblearn.over_sampling import SMOTE
@@ -32,66 +32,77 @@ input_data['Amount'] = amount
 input_data['V1'], input_data['V2'], input_data['V3'], input_data['V4'], input_data['V5'] = v1, v2, v3, v4, v5
 # Update with full V6-V28 assignments once added (e.g., input_data['V6'] = v6)
 
-# Load/Train Model (cached—new tech: One-time fit, persists via joblib)
+# CHANGE: Renamed & Modified—Load pre-trained (no CSV/train on cloud; fallback for local)
 @st.cache_data
-def prepare_model():
-    df = pd.read_csv('creditcard.csv')
-    X = df[feature_names]
-    y = df['Class']
-    X_train, _, y_train, _ = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
-    
-    scaler = StandardScaler()
-    X_train['Amount'] = scaler.fit_transform(X_train[['Amount']])
-    
-    smote = SMOTE(random_state=42)
-    X_train_bal, y_train_bal = smote.fit_resample(X_train, y_train)
-    
-    rf = RandomForestClassifier(n_estimators=100, random_state=42)
-    rf.fit(X_train_bal, y_train_bal)
-    
-    # Save for repo (portfolio: Reproducible artifacts)
-    joblib.dump(rf, 'fraud_rf_model.pkl')
-    joblib.dump(scaler, 'amount_scaler.pkl')
-    
-    return rf, scaler
+def load_model():
+    try:
+        rf = joblib.load('fraud_rf_model.pkl')
+        scaler = joblib.load('amount_scaler.pkl')
+        st.success("Loaded pre-trained SMOTE-RF (91% AUC)—fraud engine online!")
+        return rf, scaler
+    except FileNotFoundError:
+        # FALLBACK: Train if .pkl missing (local dev only—warns on cloud)
+        st.warning("Pre-trained models missing—falling back to train (local only; run train_model.py first).")
+        df = pd.read_csv('creditcard.csv')  # Assumes local CSV
+        X = df[feature_names]
+        y = df['Class']
+        X_train, _, y_train, _ = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+        
+        scaler = StandardScaler()
+        X_train['Amount'] = scaler.fit_transform(X_train[['Amount']])
+        
+        smote = SMOTE(random_state=42)
+        X_train_bal, y_train_bal = smote.fit_resample(X_train, y_train)
+        
+        rf = RandomForestClassifier(n_estimators=100, random_state=42)
+        rf.fit(X_train_bal, y_train_bal)
+        
+        # Save for next time
+        joblib.dump(rf, 'fraud_rf_model.pkl')
+        joblib.dump(scaler, 'amount_scaler.pkl')
+        st.success("Trained & saved model—83% recall ready!")
+        return rf, scaler
 
 if 'model' not in st.session_state:
-    with st.spinner("🔄 Loading SMOTE-RF model... (~30s first time)"):
-        st.session_state.model, st.session_state.scaler = prepare_model()
-        st.success("Model ready—91% AUC fraud engine online!")
+    with st.spinner("🔄 Loading SMOTE-RF model..."):
+        st.session_state.model, st.session_state.scaler = load_model()
 
 model = st.session_state.model
 scaler = st.session_state.scaler
 
-# Predict Button (triggers inference—new tech: st.button for interactivity)
-if st.sidebar.button("🚨 Analyze Risk", type="primary"):
-    # Scale & predict
-    input_scaled = input_data.copy()
-    input_scaled['Amount'] = scaler.transform(input_scaled[['Amount']])
-    
-    prob_fraud = model.predict_proba(input_scaled)[0][1]  # Prob of fraud (0-1)
-    prediction = model.predict(input_scaled)[0]  # Binary: 0/1
-    
-    # Results Column 1: Score & Alert
-    col1, col2 = st.columns(2)
-    with col1:
-        st.metric("Fraud Risk", f"{prob_fraud:.1%}", delta=None)
-        risk_level = "HIGH ⚠️" if prob_fraud > 0.5 else "LOW ✅"
-        st.error(f"Prediction: {risk_level} ({'Fraud' if prediction == 1 else 'Legit'})")
-    
-    # Column 2: Explainability (top features—fintech regs love this)
-    with col2:
-        importances = pd.DataFrame({
-            'Feature': feature_names,
-            'Importance': model.feature_importances_
-        }).sort_values('Importance', ascending=False).head(5)
-        st.subheader("Top Risk Drivers")
-        st.bar_chart(importances.set_index('Feature'))
-        st.caption("E.g., High V11 = anomaly flag (from EDA correlations)")
-    
-    # Bonus: Confusion Matrix Snippet (embed your eval viz)
-    st.markdown("---")
-    st.caption("*Baseline Metrics: 83% Fraud Recall | Full EDA in fraud_eda.ipynb*")
+# CHANGE: Add check for model load (error if failed on cloud)
+if model is None:
+    st.error("Model load failed—ensure .pkl files are committed & CSV local for train.")
+else:
+    # Predict Button (triggers inference—new tech: st.button for interactivity)
+    if st.sidebar.button("🚨 Analyze Risk", type="primary"):
+        # Scale & predict
+        input_scaled = input_data.copy()
+        input_scaled['Amount'] = scaler.transform(input_scaled[['Amount']])
+        
+        prob_fraud = model.predict_proba(input_scaled)[0][1]  # Prob of fraud (0-1)
+        prediction = model.predict(input_scaled)[0]  # Binary: 0/1
+        
+        # Results Column 1: Score & Alert
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("Fraud Risk", f"{prob_fraud:.1%}", delta=None)
+            risk_level = "HIGH ⚠️" if prob_fraud > 0.5 else "LOW ✅"
+            st.error(f"Prediction: {risk_level} ({'Fraud' if prediction == 1 else 'Legit'})")
+        
+        # Column 2: Explainability (top features—fintech regs love this)
+        with col2:
+            importances = pd.DataFrame({
+                'Feature': feature_names,
+                'Importance': model.feature_importances_
+            }).sort_values('Importance', ascending=False).head(5)
+            st.subheader("Top Risk Drivers")
+            st.bar_chart(importances.set_index('Feature'))
+            st.caption("E.g., High V11 = anomaly flag (from EDA correlations)")
+        
+        # Bonus: Confusion Matrix Snippet (embed your eval viz)
+        st.markdown("---")
+        st.caption("*Baseline Metrics: 83% Fraud Recall | Full EDA in fraud_eda.ipynb*")
 
 # Footer: Portfolio Tie-In
 st.markdown("---")
