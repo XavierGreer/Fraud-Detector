@@ -1,6 +1,6 @@
 # AI-Powered Fraud Detection Tool
 
-[![Streamlit App](https://img.shields.io/badge/Streamlit-Live_Demo-brightgreen?logo=streamlit)](https://your-streamlit-app-link.streamlit.app)
+[![Streamlit App](https://img.shields.io/badge/Streamlit-Live_Demo-brightgreen?logo=streamlit)](https://fraud-detector-xg.streamlit.app)
 [![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python)](https://www.python.org/)
 [![scikit-learn](https://img.shields.io/badge/scikit--learn-1.5.1-yellow?logo=scikit-learn)](https://scikit-learn.org/)
 [![GitHub](https://img.shields.io/badge/GitHub-Repo-purple?logo=github)](https://github.com/XavierGreer/Fraud_Detector)
@@ -62,13 +62,13 @@ Clone and run locally in ~5 mins (macOS/Conda assumed; adapt as needed).
    streamlit run app.py  # localhost:8501—test txn scoring
 
 ### Notes
-Models auto-save as `.pkl` on first run. M1 Mac? All compatible. Export env: `conda env export > environment.yml`.
+Models auto-save as `.pkl` on first run. Export env: `conda env export > environment.yml`.
 
 ## 🚀 Usage & Demo
 1. **EDA Notebook** (`fraud_eda.ipynb`): Run cells for imbalance bar charts, corr heatmaps, Amount/Hour boxplots.
 2. **Streamlit App** (`app.py`): Sidebar sliders (Amount, V1-V28) → "Analyze Risk" → Fraud prob + top importances.
    - **Test Case**: Amount=$20, V11=1.5 → ~70% risk ("HIGH ⚠️ | Driver: V11 anomaly").
-3. **Live Deploy**: [Streamlit Cloud](https://your-streamlit-app-link.streamlit.app)—share for interviews.
+3. **Live Deploy**: [Streamlit Cloud](https://fraud-detector-xg.streamlit.app).
 
 **Sample Output**:
 - **Input**: Amount=50, V4=0.8 (corr=0.13).
@@ -83,12 +83,10 @@ Models auto-save as `.pkl` on first run. M1 Mac? All compatible. Export env: `co
 ## 📝 Resume & Learning Highlights
 - **Skills Demonstrated**: Supervised ML (ensembles/metrics), ethical oversampling (SMOTE), full-stack deployment (Streamlit MLOps)—tailored for fintech risk roles.
 - **Quantifiable**: "Boosted fraud recall 1% on imbalanced data—$10k+ equiv. savings in 1M txn sim; new tech: Streamlit for rapid fintech prototypes."
-- **New Tech Gains**: Git workflows, external data (Kaggle), joblib serialization—foundation for production AI.
+- **New Tech Gains**: external data (Kaggle), joblib serialization—foundation for production AI.
 
 ## 📞 Contact & Credits
-Built by [Your Name]—fintech ML enthusiast. Collabs? [LinkedIn](https://linkedin.com/in/yourprofile) or email.
-
-**License**: MIT—fork away!
+Built by Xavier Greer — fintech ML enthusiast. Collabs? [LinkedIn](https://www.linkedin.com/in/xavier-greer-b38b86311/) or Email - work.xavier.greer@gmail.com.
 
 ---
 
